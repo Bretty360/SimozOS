@@ -1,4 +1,186 @@
-#setup script
+# klasika start point
 sudo apt update
 sudo apt upgrade -y
 
+# opravy repo
+
+sudo apt --fix-broken install
+sudo apt full-upgrade
+
+# instalace aplikaci
+sudo apt install gparted vlc chromium fastfetch 
+sudo apt install va-driver-all mesa-va-drivers mesa-vdpau-drivers libvdpau-va-gl1
+
+
+# Vytvoří globální šablonu pro MPV
+mkdir -p /etc/skel/.config/mpv
+
+# sekce setup drivers
+# Vytvoří soubor mpv.conf s univerzálním nastavením
+cat << EOF > /etc/skel/.config/mpv/mpv.conf
+hwdec=auto-safe
+vo=gpu
+EOF
+
+# práva
+sudo su
+
+# rdp vzdalena plocha
+sudo apt update
+sudo apt install xrdp
+sudo systemctl enable --now xrdp
+
+# správa pameti 
+sudo apt install zram-tools -y
+sudo nano /etc/default/zram-tools
+
+# vlozit do souboru:
+# Nastaví velikost ZRAM na 50 % celkové kapacity RAM počítače
+PERCENT=50
+# Použije moderní a velmi rychlý kompresní algoritmus zstd
+ALGORITHM=zstd
+
+
+
+
+# swap 
+sudo nano /etc/sysctl.conf
+
+# vlozit do souboru:
+# Systém začne swapovat až při opravdu vysokém využití RAM
+vm.swappiness=10
+# Vylepší kešování souborového systému
+vm.vfs_cache_pressure=50
+
+
+
+# Vytvoří složku pro zásady Chromia
+mkdir -p /etc/chromium/policies/managed
+
+# Vloží pravidlo pro automatickou instalaci doplňků
+cat << 'EOF' > /etc/chromium/policies/managed/extensions.json
+{
+  "ExtensionInstallForcelist": [
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx",
+    "akdgnmcogleamikklghocmempfbfipkg;https://clients2.google.com/service/update2/crx"
+  ]
+}
+EOF
+
+
+
+# Vytvoří složku pro nastavení aplikací
+mkdir -p /etc/skel/.config
+
+# Nastaví výchozí aplikace pro media a web
+cat << 'EOF' > /etc/skel/.config/mimeapps.list
+[Default Applications]
+video/mp4=mpv.desktop;
+video/x-matroska=mpv.desktop;
+video/webm=mpv.desktop;
+audio/mpeg=audacious.desktop;
+audio/x-wav=audacious.desktop;
+text/html=chromium.desktop;
+x-scheme-handler/http=chromium.desktop;
+x-scheme-handler/https=chromium.desktop;
+EOF
+
+# informace o systemu
+sudo nano /etc/os-release
+
+NAME="SimozOS"
+VERSION="1.1 LTS"
+ID=SimozOS
+ID_LIKE=debian
+PRETTY_NAME="SimozOS 1.0 LTS (trixie)"
+VERSION_ID="1.1"
+HOME_URL="https://github.com/Bretty360/SimozOS"
+BUG_REPORT_URL="https://github.com/Bretty360/SimozOS"
+
+sudo nano /etc/issue
+
+SimozOS 1.1 LTS \n \l
+
+echo "" >> /etc/skel/.bashrc
+echo "# Zobrazeni informaci o systemu po otevreni terminalu" >> /etc/skel/.bashrc
+echo "fastfetch" >> /etc/skel/.bashrc
+
+# obrazek pozadí
+mkdir -p /usr/share/backgrounds/mylightos/
+
+
+# fastfetch
+
+cat << 'EOF' > /etc/skel/.config/fastfetch/ascii.txt
+  ____ ___ __  ____1___ _____ 
+ / ___|_ _|  \/  / __ \_  / 
+ \___ \| || |\/| | |  | / /  
+  ___) | || |  | | |__| / /_ 
+ |____/___|_|  |_|\____/___| 
+     / __ \/ ___|            
+    | |  | \___ \            
+    | |__| |___) |           
+     \____/|____/            
+EOF
+
+# end
+
+cat << 'EOF' > /etc/skel/.config/fastfetch/config.jsonc
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "~/.config/fastfetch/ascii.txt",
+    "color": {
+      "1": "green"
+    }
+  },
+  "modules": [
+    "title",
+    "separator",
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "wm",
+    "terminal",
+    "cpu",
+    "gpu",
+    "memory",
+    "break",
+    "colors"
+  ]
+}
+EOF
+
+# end
+
+cp -r /etc/skel/.config/fastfetch /root/.config/
+fastfetch
+
+
+
+# cisteni souboru pred instalaci
+
+# Odstraní nepotřebné balíčky (staré závislosti)
+apt autoremove --purge -y
+
+# Vyčistí mezipaměť stáhnutých .deb balíčků
+apt clean
+apt autoclean
+
+# Vyčištění složek /tmp a /var/tmp
+rm -rf /tmp/* /var/tmp/*
+
+# Vyprázdnění systémových logů
+rm -rf /var/log/*
+rm -rf /var/backups/*
+
+# Vyčištění mezipaměti uživatele root
+rm -rf /root/.cache/*
+
+# Vymaže historii bash příkazů
+cat /dev/null > /root/.bash_history
+history -c
